@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // demand paging system : partition the program into same size blocks(pages)
 // PMT
@@ -41,15 +42,102 @@
 // show result
 // ---------------------------------
 
-#define MAX 200
+#define MAX_LENGTH 1000
+#define MAX_PAGE 100
+#define MAX_FRAME 20
+#define MAX_WINSIZE 100
 #define FALSE 0
 #define TRUE 1
 
+int front;
+int rear;
+
+// Queue functions
+int isEmpty(int front, int rear)
+{
+    if (front == rear)
+        return TRUE;
+    else
+        return FALSE;
+}
+
+int isFull(int n_pframe)
+{
+    int temp = (rear + 1) % n_pframe;
+    if (temp == front)
+        return TRUE;
+    else
+        return FALSE;
+}
+
+int count(int front, int rear, int n_pframe)
+{
+    if (front > rear)
+        return n_pframe - (front - rear);
+    return rear - front;
+}
+
+void addq(int PID, int *queue, int n_pframe)
+{
+    if (isFull(n_pframe))
+        printf("Ready Queue is Full.\n");
+    else
+    {
+        rear = (rear + 1) % n_pframe;
+
+        queue[rear] = PID;
+    }
+}
+
+int deleteq(int *queue, int n_pframe)
+{
+
+    if (isEmpty(front, rear))
+    {
+        printf("Ready Queue is Empty.\n");
+        return 0;
+    }
+    else
+    {
+        front = (front + 1) % n_pframe;
+        return queue[front];
+    }
+}
+
+void printQ(int *queue, int n_pframe){
+
+    printf("FrameMem: ");
+    for(int i =0; i<n_pframe;i++){
+        printf("%d ", queue[i]);
+    }
+    printf("\n");
+}
+
 int main(int argc, char **argv){
 
-    // Local Variables
-    int page_num, page_frame_num, window_size, reference_string_len;
-    int time_count = 0;
+    int n_page, n_pframe, n_ws, pr_length;
+
+    int pageCount[MAX_PAGE+1] = {0,};
+    int frameMemory[MAX_FRAME+1] = {0,};
+
+    n_pframe = 10; // ¿¹½Ã°ª
+
+    frameMemory[n_pframe] = -1; // set End of Page Frame : -1 page number is error/end
+
+
+    front = n_pframe - 1;
+    rear = n_pframe - 1;
+
+
+    // FIFO : Queue
+    deleteq(frameMemory,n_pframe);
+    printf("front : %d, rear : %d\n",front, rear);
+    addq(100,frameMemory,n_pframe);
+    printf("front : %d, rear : %d\n",front, rear);
+    printQ(frameMemory,n_pframe);
+    printf("front : %d, rear : %d\n",front, rear);
+
 
     return 0;
+
 }
