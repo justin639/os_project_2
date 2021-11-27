@@ -12,15 +12,15 @@
 // Place Replacement
 // Fixed - page fault -> no more page frame left -> replace
 // MIN : Minimize page fault frequency
-// FIFO : first in first out - queue
+// FIFO : First in First out - queue
 // LRU : Least Recently Used - stack
 // LFU : Least Frequently Used - stack
 //
 // Variable - page fault -> page new input(for time interval WS)
 // WS Memory Management : after WS page gets out - not page fault!*
 //
-// track changes in memory residence set, page fault
-// tie-break rules : smallest #page changes
+// Tie-Breaking Rules : LRU - smallest # page replace
+//                      LFU - biggest # page replace
 
 // =========== Input ==========
 //         N         |           M           |      W      |             K             |
@@ -34,11 +34,13 @@
 // FIFO / LRU / LFU / WS
 // ...
 
+// define Global Variables ======================
 // Global Variables
 int front, rear; // Queue
 int time_count = 0; // Time Count
 int pf_count = 0; // Page Fault Count
 
+// define Functions =============================
 // Queue functions
 int isEmpty()
 {
@@ -84,7 +86,9 @@ int deleteq(int *queue, int n_pframe)
     }
 }
 
-// function for linearSearch
+// function for Linear Search in Array
+//     if found -> return the index of target 
+//     else -> return size of array(index need to be smaller than size)
 int linearSearch(int current, int end, int target, int *rf_String)
 {
     for (int i = current + 1; i < end; i++)
@@ -97,10 +101,11 @@ int linearSearch(int current, int end, int target, int *rf_String)
     return end;
 }
 
-// check page fault
+// check Page Fault
+//     if target index not found -> return TRUE
+//     else -> return FALSE
 int pagefault(int *frame, int next_page, int n_pframe)
 {
-
     int index = linearSearch(-1, n_pframe, next_page, frame);
     if (index == n_pframe)
     {
@@ -112,6 +117,7 @@ int pagefault(int *frame, int next_page, int n_pframe)
     }
 }
 
+// function for Printing Headers of outputs
 void printTitle(int n_pframe)
 {
     printf("Time | Ref.string | #Frame ");
@@ -119,11 +125,11 @@ void printTitle(int n_pframe)
     {
         printf("%-5d", i);
     }
-    printf("| P.F.\n");
+    printf("| Page Fault\n");
     return;
 }
 
-// title for WS
+// function for Printing Headers of outputs for WS
 void printTitle_WS(int n_page)
 {
     printf("Time | Ref.string |  #Page ");
@@ -135,6 +141,7 @@ void printTitle_WS(int n_page)
     return;
 }
 
+// function for Printing Results
 void printResult(int next_page, int pf_count, int *frame, int n_pframe, char buffer)
 {
     printf("%-5d %3d %18d", time_count + 1, next_page, frame[0]);
@@ -159,7 +166,7 @@ void printResult(int next_page, int pf_count, int *frame, int n_pframe, char buf
     return;
 }
 
-// result for WS
+// function for Printing Results for WS
 void printResult_WS(int next_page, int pf_count, int *pageCount, int n_page, char buffer)
 {
     printf("%-5d %3d ", time_count + 1, next_page);
@@ -194,7 +201,8 @@ void printResult_WS(int next_page, int pf_count, int *pageCount, int n_page, cha
     return;
 }
 
-// initialize Page Frame : page number -1 is empty/end/error
+// function for initialize Page Frame
+// # Page -1 means empty / end / error
 void initArray(int *frame, int n_pframe, int value)
 {
     for (int i = 0; i < n_pframe + 1; i++)
@@ -215,7 +223,7 @@ void MIN(int n_pframe, int ref_length, int *frame, int *rf_String)
     int next_page, target;
     char buffer = ' ';
 
-    printf("============= MIN ==============\n");
+    printf("MIN\n");
     printTitle(n_pframe);
 
     // for each input
@@ -224,33 +232,31 @@ void MIN(int n_pframe, int ref_length, int *frame, int *rf_String)
         next_page = rf_String[time_count];
         buffer = ' ';
 
-        // No P.F. -> do nothing
+        // No Page Fault -> do nothing
+        // Page Fault
         if (pagefault(frame, next_page, n_pframe) == TRUE)
         {
-            // mem not full
-            // page fault
-            if (rear < n_pframe)
+            if (rear < n_pframe) // Mem not full
             {
                 frame[rear] = next_page;
                 rear++;
             }
-            else
+            else // Mem full -> replace
             {
-                // P.F. -> replace farthest
-                // find replace target *
+                // replace Farthest(MAX Distance)
+                // find Replace Target *
+                // Local variables
                 int target_distance = 0;
                 target = 0;
                 int temp_distance;
 
                 for (int i = 0; i < n_pframe; i++)
-                {
+                {   
+                    // get Distance of # Page in frame[i]
                     temp_distance = linearSearch(time_count, ref_length, frame[i], rf_String);
-                    // if distance of #page in frame[i](temp_distance) > current distance
-                    // target frame index = i
-                    // tie-breaking rule : smaller #page in frame[index]
 
-                    // printf("%20s%d %d", "temp/target: ", temp_distance, target_distance);
-
+                    // find MAX distance
+                    // ** Tie-Breaking Rule : replace to Smaller # Page **
                     if (target_distance < temp_distance)
                     {
                         target = i;
@@ -265,18 +271,19 @@ void MIN(int n_pframe, int ref_length, int *frame, int *rf_String)
                     }
                 }
 
+                // update Target with Current MAX index
                 frame[target] = next_page;
             }
-            // check page fault
 
             pf_count++;
             buffer = 'F';
-        }
-
+        } // end Page Fault
+        
+        // Print Result
         printResult(next_page, pf_count, frame, n_pframe, buffer);
     }
     printf("Total Page Fault : %d\n\n", pf_count);
-}
+} // end MIN
 
 // FIFO : Queue
 void FIFO(int n_pframe, int ref_length, int *frame, int *rf_String)
@@ -300,18 +307,17 @@ void FIFO(int n_pframe, int ref_length, int *frame, int *rf_String)
         next_page = rf_String[time_count];
         buffer = ' ';
 
-        // check page fault
-        // P.F. -> delete & add
-        // No P.F. -> do nothing
+        // check Page Fault
+        // No Page Fault -> do nothing
+        // Page Fault
         if (pagefault(frame, next_page, n_pframe) == TRUE)
         {
-            // add queue if not full
-            // page fault
-            if (isFull(n_pframe) == FALSE)
-            {
+            if (isFull(n_pframe) == FALSE) // Mem not Full
+            {   
+                // just addq
                 addq(next_page, frame, n_pframe);
             }
-            else
+            else // Mem full -> deleteq & addq
             {
                 deleteq(frame, n_pframe);
                 addq(next_page, frame, n_pframe);
@@ -319,8 +325,9 @@ void FIFO(int n_pframe, int ref_length, int *frame, int *rf_String)
 
             pf_count++;
             buffer = 'F';
-        }
+        } // end Page Fault
 
+        // Print Result
         printResult(next_page, pf_count, frame, n_pframe, buffer);
     }
     printf("Total Page Fault : %d\n\n", pf_count);
@@ -339,7 +346,7 @@ void LRU(int n_pframe, int ref_length, int *frame, int *rf_String, int *pageCoun
     int next_page;
     char buffer = ' ';
 
-    printf("============= LRU ==============\n");
+    printf("LRU\n");
     printTitle(n_pframe);
 
     // for each input
@@ -347,24 +354,19 @@ void LRU(int n_pframe, int ref_length, int *frame, int *rf_String, int *pageCoun
     {
         next_page = rf_String[time_count];
         buffer = ' ';
-        // add to stack if not full
-        // update distance(count) of each pages
-        // page fault
 
-        // check page fault
-        // P.F. -> delete & update
-        // delete -> distance = 0 | update
-        // No P.F. -> do nothing
-        if (pagefault(frame, next_page, n_pframe) == TRUE)
+        // check Page Fault
+        // no Page Fault -> update Page counts
+        // Page Fault -> replace least recent
+        if (pagefault(frame, next_page, n_pframe) == TRUE) // Page Fault
         {
-
-            if (rear < n_pframe)
+            if (rear < n_pframe) // Mem not Full 
             {
-                // add
+                // add to stack
                 frame[rear] = next_page;
                 rear++;
             }
-            else
+            else // Mem full -> replace least recent
             {
                 int max_dist = 0;
                 int target;
@@ -378,7 +380,7 @@ void LRU(int n_pframe, int ref_length, int *frame, int *rf_String, int *pageCoun
                         max_dist = pageCount[frame[i]];
                     }
                 }
-                // update frame
+                // update time stamp 0 -> out-Page stamp = 0, in-Page stamp + 1 
                 pageCount[frame[target]] = 0;
                 frame[target] = next_page;
             }
@@ -386,12 +388,14 @@ void LRU(int n_pframe, int ref_length, int *frame, int *rf_String, int *pageCoun
             pf_count++;
             buffer = 'F';
         }
-        else
+        else // no Page Fault
         {
-            // update counts
+            // update time stamp
             pageCount[next_page] = 0;
         }
-        // update counts
+
+        // update time stamping
+        // Pages in frame time stamp++
         for (int i = 0; i < n_pframe; i++)
         {
             if (frame[i] > -1)
@@ -400,6 +404,7 @@ void LRU(int n_pframe, int ref_length, int *frame, int *rf_String, int *pageCoun
             }
         }
 
+        // print Result
         printResult(next_page, pf_count, frame, n_pframe, buffer);
     }
     printf("Total Page Fault : %d\n\n", pf_count);
@@ -418,7 +423,7 @@ void LFU(int n_pframe, int ref_length, int *frame, int *rf_String, int *pageCoun
     int next_page, target;
     char buffer = ' ';
 
-    printf("============= LFU ==============\n");
+    printf("LFU\n");
     printTitle(n_pframe);
 
     // for each input
@@ -426,19 +431,16 @@ void LFU(int n_pframe, int ref_length, int *frame, int *rf_String, int *pageCoun
     {
         buffer = ' ';
         next_page = rf_String[time_count];
-        // add to stack if not full
-        // update frequence(count) of each pages
-        // page fault
 
         // check page fault
-        // P.F. -> delete & update
-        // delete -> distance = 0 | update
-        // No P.F. -> do nothing
-        if (pagefault(frame, next_page, n_pframe) == TRUE)
+        // no Page Fault -> do nothing
+        // Page Fault -> replace least frequent
+        // update frequency in last(whether new or not)
+        if (pagefault(frame, next_page, n_pframe) == TRUE) // Page Fault
         {
-            if (rear < n_pframe)
+            if (rear < n_pframe) // 
             {
-                // add
+                // add to stack
                 frame[rear] = next_page;
                 rear++;
             }
@@ -446,7 +448,8 @@ void LFU(int n_pframe, int ref_length, int *frame, int *rf_String, int *pageCoun
             {
                 int min_count = MAX_LENGTH;
 
-                // find min count(least frequent) from pageCount array
+                // find MIN frequency from pageCount array
+                // tie-breaking Rule : bigger # Page is replaced
                 for (int i = 0; i < n_pframe; i++)
                 {
                     if (pageCount[frame[i]] < min_count)
@@ -469,9 +472,10 @@ void LFU(int n_pframe, int ref_length, int *frame, int *rf_String, int *pageCoun
             pf_count++;
             buffer = 'F';
         }
-        // update counts
+        // update frequency for input
         pageCount[next_page]++;
 
+        // print Result
         printResult(next_page, pf_count, frame, n_pframe, buffer);
     }
     printf("Total Page Fault : %d\n\n", pf_count);
@@ -488,7 +492,7 @@ void WS(int winSize, int ref_length, int *rf_String, int *pageCount, int n_page)
     int next_page;
     char buffer = ' ';
 
-    printf("============== WS ==============\n");
+    printf("WS\n");
     printTitle_WS(n_page);
 
     // for each input
@@ -496,25 +500,27 @@ void WS(int winSize, int ref_length, int *rf_String, int *pageCount, int n_page)
     {
         buffer = ' ';
         next_page = rf_String[time_count];
+
         // check page fault(existence)
-        if (pageCount[next_page] == 0)
+        if (pageCount[next_page] == 0) // Page Fault
         {
-            // P.F. -> pf_count++, buffer = 'F'
             pf_count++;
             buffer = 'F';
         }
-        // update validation count (pageCount[i]++)%(winSize + 1)
-        // no P.F. -> pageCount[page] = 1;
-        // P.F -> pageCount[page] = 1;
+
+        // update validation count (pageCount[i]+1)%(winSize + 2)
         for (int i = 0; i < n_page; i++)
         {
-            if (pageCount[i] != 0)
+            if (pageCount[i] != 0) 
             {
                 pageCount[i] = (pageCount[i] + 1) % (winSize + 2);
             }
         }
+
+        // whether Page Fault or not, pageCount[in-Page] = 1;
         pageCount[next_page] = 1;
 
+        // print Resault
         printResult_WS(next_page, pf_count, pageCount, n_page, buffer);
     }
     printf("Total Page Fault : %d\n\n", pf_count);
@@ -525,35 +531,53 @@ int main(int argc, char **argv)
 
     // ---------------- Outline -------------------
     //
-    // file read & initialize queue and arrays
+    // file read & set initial arrays
+    // MIN:
+    //     for each input:
+    //         page_fault:
+    //             Mem_full: add to stack
+    //             else: find farthest & replace
+    //     print result
     //
+    // FIFO:
+    //     for each input:
+    //         page_fault:
+    //             Mem_full: addq
+    //             else: deleteq & addq
+    //     print result
     //
+    // LRU:
+    //     for each input:
+    //         page_fault:
+    //             Mem_full: add to stack
+    //             else: find least recent & replace
+    //     print result
+    //
+    // LFU:
+    //     for each input:
+    //         page_fault:
+    //             Mem_full: add to stack
+    //             else: find least frequent & replace
+    //     print result
+    //
+    // WS:
+    //     for each input:
+    //         page_fault:
+    //             add to Mem
+    //         update based on WS
+    //     print result
     // --------------------------------------------
 
     // Local variable
     int n_page, n_pframe, winSize, ref_length;
-    int rf_String[MAX_LENGTH] = {
-        0,
-    };
-    // int rf_String[MAX_LENGTH + 1] = {0, 1, 2, 3, 2, 3, 4, 5, 4, 1, 3, 4, 3, 4, 5}; // 예시1
-    // int rf_String[MAX_LENGTH + 1] = {0, 1, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 4, 5, 6, 7, 8, 6, 7, 8}; // 예시2
-    // array for distance from current(LRU), current frequency(LFU), validity(WS)
-    int pageCount[MAX_PAGE] = {
-        0,
-    };
-    int frame[MAX_FRAME] = {
-        0,
-    };
+    int rf_String[MAX_LENGTH] = { 0, };
+    // array for time-stamp(LRU), current frequency(LFU), validity(WS)
+    int pageCount[MAX_PAGE] = { 0, };
+    int frame[MAX_FRAME] = { 0, };
 
-    // 예시값
-    // n_page = 6;
-    // n_pframe = 3;
-    // winSize = 3;
-    // ref_length = 15;
-
-    // read File "inpit#.txt"
     if (argc == 2)
     {
+        // read File "inpit#.txt"
         FILE *fp = fopen(argv[1], "rb");
 
         if (fp == NULL)
@@ -573,24 +597,24 @@ int main(int argc, char **argv)
                 fscanf(fp, "%d ", &rf_String[i]);
             }
         }
-        fclose(fp);
+        fclose(fp); // end read
 
-        // MIN : Stack(semi-stack) -> need to chore output format
+        // MIN : Stack(semi-stack)
         MIN(n_pframe, ref_length, frame, rf_String);
 
-        // FIFO : Queue -> need to chore output format
+        // FIFO : Queue
         FIFO(n_pframe, ref_length, frame, rf_String);
 
-        // LRU : Hash table(dist from current)
+        // LRU : Hash table(time-stamp)
         LRU(n_pframe, ref_length, frame, rf_String, pageCount, n_page);
 
-        // LFU : Hash table(dist from current)
+        // LFU : Hash table(frequency)
         LFU(n_pframe, ref_length, frame, rf_String, pageCount, n_page);
 
-        // WS
+        // WS : Window Size
         WS(winSize, ref_length, rf_String, pageCount, n_page);
-    }
-    else
+    } 
+    else // input format worng
     {
         printf("Check enter format: os-sims input#.txt\n");
     }
