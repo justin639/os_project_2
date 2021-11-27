@@ -446,10 +446,10 @@ void LFU(int n_pframe, int ref_length, int *frame, int *rf_String, int *pageCoun
             }
             else
             {
-                int min_count = MAX_LENGTH;
+                int min_count = MAX_LENGTH+1;
 
                 // find MIN frequency from pageCount array
-                // tie-breaking Rule : bigger # Page is replaced
+                // tie-breaking Rule : LRU
                 for (int i = 0; i < n_pframe; i++)
                 {
                     if (pageCount[frame[i]] < min_count)
@@ -458,10 +458,14 @@ void LFU(int n_pframe, int ref_length, int *frame, int *rf_String, int *pageCoun
                         min_count = pageCount[frame[i]];
                     }
                     else if (pageCount[frame[i]] == min_count)
-                    {
-                        if (frame[target] < frame[i])
-                        {
-                            target = i;
+                    {   
+                        for(int j = time_count-1; j >= 0; j--){
+                            if(frame[target] == rf_String[j]){
+                                target = i;
+                                break;
+                            }else if(frame[i] == rf_String[j]){
+                                break;
+                            }
                         }
                     }
                 }
@@ -532,32 +536,11 @@ int main(int argc, char **argv)
     // ---------------- Outline -------------------
     //
     // file read & set initial arrays
-    // MIN:
+    // MIN / FIFO / LRU / LFU:
     //     for each input:
     //         page_fault:
-    //             Mem_full: add to stack
-    //             else: find farthest & replace
-    //     print result
-    //
-    // FIFO:
-    //     for each input:
-    //         page_fault:
-    //             Mem_full: addq
-    //             else: deleteq & addq
-    //     print result
-    //
-    // LRU:
-    //     for each input:
-    //         page_fault:
-    //             Mem_full: add to stack
-    //             else: find least recent & replace
-    //     print result
-    //
-    // LFU:
-    //     for each input:
-    //         page_fault:
-    //             Mem_full: add to stack
-    //             else: find least frequent & replace
+    //             Mem_full: add to stack / queue
+    //             else: update on each rules
     //     print result
     //
     // WS:
