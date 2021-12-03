@@ -1,7 +1,7 @@
 CC = gcc
 CCFLAGS =
 
-SRCS = project_2.c
+SRCS = OS41_2021-2_2017311133_±Ë¡ÿºÆ_P2.c
 
 TARGET = os-sims
 
